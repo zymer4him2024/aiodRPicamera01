@@ -1,0 +1,19 @@
+{
+    "model_path": "/home/digioptics_od/camera-system/models/yolov8n.hef",
+    "confidence_threshold": 0.3,
+    "nms_threshold": 0.45,
+    "classes": [
+        "person",
+        "car",
+        "bus",
+        "truck",
+        "motorcycle"
+    ],
+    "input_size": [
+        640,
+        640
+    ],
+    "device": "hailo",
+    "visualize_local": true,
+    "target_fps": 7
+}

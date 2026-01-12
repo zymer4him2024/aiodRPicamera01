@@ -1,0 +1,11 @@
+{
+    "method": "simple_count",
+    "classes_to_count": [
+        "Pedestrians",
+        "Cars",
+        "Buses",
+        "Trucks",
+        "Motorcycles"
+    ],
+    "min_confidence": 0.35
+}

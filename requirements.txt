@@ -1,0 +1,5 @@
+flask
+requests
+opencv-python-headless<=4.10.0.84
+numpy<2.0.0
+Pillow
