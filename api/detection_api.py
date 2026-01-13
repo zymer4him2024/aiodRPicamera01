@@ -7,17 +7,21 @@ from utils.logger import get_logger
 app = Flask(__name__)
 logger = get_logger("DetectionAPI")
 
-# Global orchestrator instance
+import threading
+
+# Global orchestrator instance and lock
 orchestrator = None
+orchestrator_lock = threading.Lock()
 
 def get_orchestrator():
     global orchestrator
-    if orchestrator is None:
-        try:
-            orchestrator = Orchestrator()
-        except Exception as e:
-            logger.error(f"Failed to initialize orchestrator: {e}")
-            return None
+    with orchestrator_lock:
+        if orchestrator is None:
+            try:
+                orchestrator = Orchestrator()
+            except Exception as e:
+                logger.error(f"Failed to initialize orchestrator: {e}")
+                return None
     return orchestrator
 
 # Add dashboard routes
@@ -93,11 +97,75 @@ def get_status():
     logger.info(f"API_STATUS: Active={orch.running}, LatestCounts={orch.latest_counts}")
     return jsonify({
         "active": orch.running,
-        "camera_id": orch.transport.config.get("camera_id"),
+        "camera_id": orch.transport.binding.config.get("camera_id", "N/A"),
         "uptime": f"{uptime:.2f}s" if uptime > 0 else "N/A",
         "last_count_sent": getattr(orch, 'last_report_time_str', "N/A"),
         "latest_counts": getattr(orch, 'latest_counts', {})
     }), 200
+
+@app.route('/api/info', methods=['GET'])
+def get_info():
+    orch = get_orchestrator()
+    if not orch:
+        return jsonify({"error": "Orchestrator not ready"}), 503
+    return jsonify(orch.transport.binding.get_info()), 200
+
+@app.route('/api/bind', methods=['POST', 'GET', 'DELETE'])
+def handle_bind():
+    orch = get_orchestrator()
+    if not orch:
+        return jsonify({"error": "Orchestrator not ready"}), 503
+
+    if request.method == 'POST':
+        data = request.json
+        # Required: endpoint, auth_token, camera_id
+        required = ["endpoint", "auth_token", "camera_id"]
+        if not all(k in data for k in required):
+            return jsonify({"error": f"Missing required fields: {required}"}), 400
+        
+        if orch.transport.binding.bind(data):
+            # Dynamic re-binding: No restart needed, transport checks binding.is_bound()
+            return jsonify({
+                "success": True, 
+                "message": "Camera bound successfully",
+                "status": "active"
+            }), 200
+        return jsonify({"error": "Failed to save binding"}), 500
+
+    elif request.method == 'GET':
+        return jsonify(orch.transport.binding.get_info()), 200
+
+    elif request.method == 'DELETE':
+        if orch.transport.binding.unbind():
+            return jsonify({
+                "success": True, 
+                "message": "Camera unbound, back to standalone mode"
+            }), 200
+        return jsonify({"error": "Failed to unbind"}), 500
+
+@app.route('/api/ping', methods=['GET'])
+def test_connectivity():
+    """Tests if the camera can reach the configured backend."""
+    orch = get_orchestrator()
+    if not orch:
+        return jsonify({"error": "Orchestrator not ready"}), 503
+    
+    if not orch.transport.binding.is_bound():
+        return jsonify({"error": "Camera is UNBOUND. No backend to ping."}), 400
+    
+    # Try a dummy post or simple activation signal
+    success = orch.transport.send_activation()
+    if success:
+        return jsonify({
+            "success": True,
+            "message": "Backend reached successfully",
+            "endpoint": orch.transport.binding.config.get("endpoint")
+        }), 200
+    else:
+        return jsonify({
+            "success": False,
+            "error": "Failed to reach backend with current configuration"
+        }), 502
 
 def generate_frames():
     orch = get_orchestrator()

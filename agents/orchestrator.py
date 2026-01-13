@@ -132,6 +132,11 @@ class Orchestrator:
 
                 # Annotate
                 annotated_img = self._annotate_frame(frame, current_detections)
+            
+                # Encode for web feed
+                ret, buffer = cv2.imencode('.jpg', annotated_img)
+                if ret:
+                    self.last_annotated_frame = buffer.tobytes()
 
                 # Local GUI
                 if self.inference.config.get("visualize_local", True):

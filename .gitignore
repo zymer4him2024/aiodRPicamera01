@@ -10,13 +10,25 @@ htmlcov/
 
 # Logs
 *.log
+firebase-debug.log
+firebase-debug.*.log
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Node
+node_modules/
+.npm/
+
+# Firebase
+.firebase/
 
 # Project specific
 models/*.hef
 /tmp/
 *.sh
 !update_v*.sh
+
+# Secret
+.env

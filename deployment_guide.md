@@ -1,80 +1,108 @@
-# Deployment Guide: Raspberry Pi 5 + Hailo-8 HAT+
+# Production Handbook: AI OD Camera "Master Image"
 
-## Prerequisites
-1.  **Raspberry Pi 5** with Raspberry Pi OS (Bookworm 64-bit recommended).
-2.  **Hailo-8 HAT+** installed and recognized by the system.
-3.  **Hailo Software** installed (drivers and runtime).
-    - Follow the official [Hailo Raspberry Pi Guide](https://github.com/hailo-ai/hailo-rpi5-examples) to install `hailo-all` and `hailo-tappas-core`.
+This guide explains how to manage, capture, and duplicate your **Master SD Image** for the RPi 5 + Hailo-8 hardware units.
 
-## 1. Transfer Project Files
-Copy the entire project directory to your Raspberry Pi. You can use `scp`:
+## 1. The "Master Image" Concept
+Your current SD card is now a **Master Image**. 
+- **Production Ready**: It starts in a "factory-fresh" UNBOUND state.
+- **Self-Healing**: It automatically recovers from camera or AI hangs.
+- **Dynamic Identity**: It generates a unique hardware serial number on boot.
 
+---
+
+## 2. Capturing the "Golden Image" (Mass Production)
+To create 100 cameras, you capture this one card and clone it.
+
+### Step A: Sanitization (On the RPi)
+This removes your personal logs and history while keeping the code.
 ```bash
-scp -r /path/to/project user@raspberrypi_ip:/home/user/camera-system
+# Run this once on your finished RPi
+curl -s http://192.168.0.90:8000/prepare_master.sh | bash
+sudo shutdown -h now
 ```
 
-## 2. Model Setup
-Ensure the compiled model file exists.
-- **Path**: `/home/digioptics_od/camera-system/models/yolov8n.hef`
-- If you don't have it, download a pre-compiled YOLOv8n HEF from the Hailo Model Zoo or compile one using the Hailo Dataflow Compiler.
-- Update `config/detection_config.json` if your model path is different.
+### Step B: Clone the Card (On your Mac)
+1. Plug the SD card into your Mac.
+2. Open terminal and run `diskutil list` to find the SD card (e.g., `disk4`).
+3. Save the image to your Desktop:
+   ```bash
+   # Replace rdiskN with your actual number (e.g., rdisk4)
+   sudo dd if=/dev/rdiskN of=~/Desktop/aiod_master_v1.0.img bs=1m status=progress
+   ```
+   **The file `aiod_master_v1.0.img` will appear on your Mac Desktop after this finishing.**
 
-## 3. Environment Setup
-Run the included setup script to install dependencies and create a virtual environment.
+---
+
+## 3. Deploying to New Units
+Use **Raspberry Pi Imager** on your Mac to flash the `.img` file to new SD cards.
+
+1. **Plug & Play**: Insert the new card into a fresh RPi.
+2. **Auto-Start**: The system will boot and start detection locally.
+3. **Verify Identity**:
+   ```bash
+   curl http://<new_pi_ip>:5000/api/info
+   ```
+   *(It will have a different serial number than the first one!)*
+
+---
+
+## 4. The Universal Handshake (API)
+The camera works with **any** backend (Firebase, AWS, Custom Python/Node) by adapting its headers and auth mode.
+
+### Example: Custom AWS/GCP Backend
+If your backend requires a custom API Key and a specialized "Device-Mode" header:
 
 ```bash
-cd camera-system
-chmod +x scripts/setup_rpi.sh
-./scripts/setup_rpi.sh
+curl -X POST http://<camera_ip>:5000/api/bind \
+     -H "Content-Type: application/json" \
+     -d '{
+       "endpoint": "https://api.yourcloud.com/v1/ingest",
+       "auth_mode": "custom",
+       "custom_auth_header": "X-Device-Token",
+       "auth_token": "SUPER_SECRET_TOKEN",
+       "custom_headers": {
+         "X-Device-Mode": "production",
+         "X-Tenant-ID": "TENANT_123"
+       },
+       "camera_id": "MAIN_GATE_01",
+       "site_id": "WAREHOUSE_A"
+     }'
 ```
 
-## 4. Configuration
-1.  **Backend**: Edit `config/backend_config.json` with your Firebase API URL and Auth Token.
-2.  **Camera**: Edit `config/camera_config.json` if you need to change resolution or device ID.
+---
 
-## 5. Verification
-Run the verification script to check the Hailo hardware:
+## 5. Testing Connectivity
+Before leaving the installation site, verify the camera can actually "talk" to the backend:
 
 ```bash
-source venv/bin/activate
-python3 tests/verify_hailo.py
+curl http://<camera_ip>:5000/api/ping
 ```
+*(Returns `{"success": true}` if the backend confirms receipt of the handshake)*
 
-## 6. Running the Application
-Start the Detection API:
+## 6. Supported Auth & Payload Modes
+The camera can adapt its identity schema to match your backend exactly.
+
+| Feature | Option | Value / Header |
+| :--- | :--- | :--- |
+| **Auth** | `bearer` | `Authorization: Bearer <token>` |
+| **Auth** | `apikey` | `X-API-Key: <token>` |
+| **Auth** | `custom` | `<custom_auth_header>: <token>` |
+| **Payload** | `legacy` | **Flat Structure** (Standard for your current dashboard) |
+| **Payload** | `universal`| **Nested Structure** (Serial# + Uptime + Counts) |
+
+---
+
+### Example: Existing Firebase Dashboard (Legacy)
+To bind the unit so it works perfectly with your current React dashboard:
 
 ```bash
-source venv/bin/activate
-python3 main.py
+curl -X POST http://<camera_ip>:5000/api/bind \
+     -H "Content-Type: application/json" \
+     -d '{
+       "endpoint": "https://your-firebase-url.com/ingest",
+       "auth_token": "YOUR_LEGACY_KEY",
+       "payload_format": "legacy",
+       "camera_id": "RETAIL_001",
+       "site_id": "NORTH_GATE"
+     }'
 ```
-
-The system will start listening on port 5000.
-
-## 7. Local Monitoring Dashboard
-Access the real-time monitoring dashboard by navigating to:
-`http://<pi_ip>:5000/dashboard`
-
-- **Live Feed**: Periodic snapshots from the camera.
-- **Controls**: Start/Stop the detection loop manually.
-- **Stats**: View uptime, camera status, and last report time.
-
-## 8. Productionization: Auto-start
-To set up the system to start automatically on boot:
-
-1. Copy the service file:
-   ```bash
-   sudo cp scripts/aiod-counter.service /etc/systemd/system/
-   ```
-2. Reload systemd and enable the service:
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable aiod-counter.service
-   ```
-3. Start the service:
-   ```bash
-   sudo systemctl start aiod-counter.service
-   ```
-4. View logs:
-   ```bash
-   journalctl -u aiod-counter.service -f
-   ```
