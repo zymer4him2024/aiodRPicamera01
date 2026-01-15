@@ -32,3 +32,4 @@ models/*.hef
 
 # Secret
 .env
+aiodcounter06-firebase-adminsdk-*.json

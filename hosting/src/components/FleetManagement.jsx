@@ -3,6 +3,7 @@ import { db, auth } from '../firebase';
 import { collection, onSnapshot, doc, query, where, getDocs, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Camera, QrCode, Wifi, Activity, ShieldCheck, Building2, MapPin, Search, Trash2, Play, Square, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import CrosslineModal from './CrosslineModal';
 
 const FleetManagement = ({ userRole = 'subadmin' }) => {
     const [cameras, setCameras] = useState([]);
@@ -10,9 +11,7 @@ const FleetManagement = ({ userRole = 'subadmin' }) => {
     const [orgs, setOrgs] = useState([]);
     const [selectedSiteForQR, setSelectedSiteForQR] = useState(null);
     const [hardwareData, setHardwareData] = useState({});
-    const [snapshots, setSnapshots] = useState({});
-    const [selectedSnapshot, setSelectedSnapshot] = useState(null);
-    const [snapshotLoading, setSnapshotLoading] = useState({});
+    const [selectedCameraForCrossline, setSelectedCameraForCrossline] = useState(null);
 
     const isSuperAdmin = userRole === 'superadmin';
 
@@ -235,6 +234,26 @@ const FleetManagement = ({ userRole = 'subadmin' }) => {
                                     >
                                         <Trash2 size={16} />
                                     </button>
+                                    {/* Large Camera Icon for Crossline Editor */}
+                                    {isSuperAdmin && (
+                                        <button
+                                            onClick={() => setSelectedCameraForCrossline(cam)}
+                                            style={{
+                                                position: 'absolute', top: '10px', right: '40px',
+                                                background: 'rgba(56, 189, 248, 0.1)',
+                                                border: '1px solid rgba(56, 189, 248, 0.3)',
+                                                borderRadius: '0.5rem',
+                                                padding: '0.5rem',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                            title="Open Crossline Editor"
+                                        >
+                                            <Camera size={20} color="var(--accent)" />
+                                        </button>
+                                    )}
                                     <div style={{ width: '60px', height: '60px', background: 'var(--card)', borderRadius: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', position: 'relative' }}>
                                         <Camera size={24} color="var(--accent)" />
                                         <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', width: '12px', height: '12px', background: getDeviceStatus(cam) === 'online' ? 'var(--success)' : '#ef4444', borderRadius: '50%', border: '2px solid #0b0f19' }}></div>
@@ -277,24 +296,6 @@ const FleetManagement = ({ userRole = 'subadmin' }) => {
                                             >
                                                 <Square size={12} color={isSuperAdmin ? "#ef4444" : "#888"} />
                                             </button>
-                                            <button
-                                                onClick={() => isSuperAdmin && captureSnapshot(cam)}
-                                                disabled={!isSuperAdmin || snapshotLoading[cam.serial]}
-                                                style={{
-                                                    background: isSuperAdmin ? 'rgba(56, 189, 248, 0.1)' : 'rgba(100, 100, 100, 0.1)',
-                                                    border: `1px solid ${isSuperAdmin ? 'rgba(56, 189, 248, 0.3)' : 'rgba(100, 100, 100, 0.3)'}`,
-                                                    borderRadius: '0.4rem',
-                                                    padding: '0.3rem',
-                                                    cursor: isSuperAdmin && !snapshotLoading[cam.serial] ? 'pointer' : 'not-allowed',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    opacity: isSuperAdmin && !snapshotLoading[cam.serial] ? 1 : 0.5
-                                                }}
-                                                title={isSuperAdmin ? (snapshotLoading[cam.serial] ? "Capturing..." : "Capture Snapshot") : "Superadmin only"}
-                                            >
-                                                <Camera size={12} color={isSuperAdmin ? "var(--accent)" : "#888"} />
-                                            </button>
                                         </div>
                                     </div>
                                     <div style={{ flex: 1 }}>
@@ -333,6 +334,14 @@ const FleetManagement = ({ userRole = 'subadmin' }) => {
                     </div>
                 )}
             </div>
+
+            {/* Crossline Modal */}
+            {selectedCameraForCrossline && (
+                <CrosslineModal
+                    camera={selectedCameraForCrossline}
+                    onClose={() => setSelectedCameraForCrossline(null)}
+                />
+            )}
         </div>
     );
 };
