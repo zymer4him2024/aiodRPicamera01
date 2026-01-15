@@ -1,0 +1,32 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is superadmin
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.role == 'superadmin';
+    }
+    
+    // Snapshots storage path: snapshots/{org_id}/{camera_id}/{timestamp}.jpg
+    match /snapshots/{org_id}/{camera_id}/{filename} {
+      // Allow devices (service accounts) to write snapshots
+      allow write: if request.auth != null;
+      
+      // Allow superadmins to read all snapshots
+      allow read: if isSuperAdmin();
+      
+      // Allow subadmins to read only their organization's snapshots
+      allow read: if isSignedIn() && request.auth.token.org_id == org_id;
+    }
+    
+    // Deny all other access by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

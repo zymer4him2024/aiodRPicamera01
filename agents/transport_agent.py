@@ -82,6 +82,7 @@ class TransportAgent:
             # Universal POST - works with standard JSON ingestion
             response = self.session.post(url, json=data, timeout=timeout)
             response.raise_for_status()
+            self.logger.info(f"Successfully posted to {url}: {response.status_code}")
             return True
         except Exception as e:
             self.logger.error(f"Post to {url} failed: {e}")
@@ -93,7 +94,7 @@ class TransportAgent:
         
         config = self.binding.config
         url = config.get("endpoint")
-        format_type = config.get("payload_format", "legacy").lower() # DEFAULT TO LEGACY for dashboard compatibility
+        format_type = config.get("payload_format", "universal").lower() # DEFAULT TO UNIVERSAL for production
         
         if format_type == "legacy":
             # FLAT SCHEMA: Matches your existing Firebase/React Dashboard exactly

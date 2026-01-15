@@ -3,7 +3,12 @@ import threading
 import traceback
 import numpy as np
 import cv2
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from utils.logger import get_logger
+from utils.hardware_monitor import HardwareMonitor
 from agents.camera_agent import CameraAgent
 from agents.inference_agent_hailo import InferenceAgent
 from agents.counting_agent import CountingAgent
@@ -27,6 +32,7 @@ class Orchestrator:
             self.inference = InferenceAgent()
             self.counter = CountingAgent()
             self.transport = TransportAgent()
+            self.hw_monitor = HardwareMonitor()
         except Exception as e:
             self.logger.error(f"Failed to initialize agents: {e}")
             raise
@@ -44,10 +50,10 @@ class Orchestrator:
             self.camera.start()
             self.inference.start()
             
-            self.transport.send_activation({
-                "status": "active",
-                "activated_at": time.time()
-            })
+            # self.transport.send_activation({
+            #     "status": "active",
+            #     "activated_at": time.time()
+            # })
             
             self.running = True
             self.start_time = time.time()
@@ -96,6 +102,10 @@ class Orchestrator:
                 current_time = time.time()
                 if not hasattr(self, 'last_report_time'): self.last_report_time = 0
                 if current_time - self.last_report_time >= self.report_interval:
+                    # Collect hardware metrics
+                    hw_metrics = self.hw_monitor.get_all_metrics()
+                    counts['fps'] = round(self.fps, 1)
+                    counts['hardware'] = hw_metrics
                     threading.Thread(target=self.transport.send_counts, args=(counts,), daemon=True).start()
                     self.last_report_time_str = time.strftime("%Y-%m-%d %H:%M:%S")
                     self.last_report_time = current_time
@@ -139,7 +149,7 @@ class Orchestrator:
                     self.last_annotated_frame = buffer.tobytes()
 
                 # Local GUI
-                if self.inference.config.get("visualize_local", True):
+                if self.inference.config.get("visualize_local", True) and os.environ.get("DISPLAY"):
                     cv2.imshow("Hailo AI Object Detection (Throttled)", annotated_img)
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         self.stop_detection()
@@ -224,3 +234,21 @@ class Orchestrator:
         except Exception as e:
             self.logger.error(f"Failed to annotate frame: {e}")
             return frame
+
+if __name__ == "__main__":
+    try:
+        # Create orchestrator instance
+        # Report interval 5 seconds is good for production
+        orchestrator = Orchestrator(report_interval=5.0)
+        
+        # Start detection loop (blocking call for display loop)
+        orchestrator.start_detection()
+        
+    except KeyboardInterrupt:
+        print("\nStopping Orchestrator...")
+        if 'orchestrator' in locals():
+            orchestrator.stop_detection()
+    except Exception as e:
+        print(f"Fatal Error: {e}")
+        traceback.print_exc()
+

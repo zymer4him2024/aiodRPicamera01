@@ -34,6 +34,16 @@ def main():
     # 2. Wait a moment for Flask to bind
     time.sleep(1)
 
+    # Start Remote Command Listener
+    from utils.command_listener import CommandListener
+    from utils.binding_manager import BindingManager
+    binding = BindingManager()
+    if binding.is_bound():
+        CommandListener(binding.serial_number).start()
+        logger.info("Remote control enabled")
+    else:
+        logger.warning("Device not bound - remote control disabled")
+
     # 3. Initialize and START orchestrator (Blocks on main thread for GUI)
     orch = get_orchestrator()
     if orch:

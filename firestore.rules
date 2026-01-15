@@ -1,58 +1,68 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public read access to sites collection for dashboard (no login required)
-    match /sites/{siteId} {
-      // Allow reading the site document (public read)
-      allow read: if true;
-      
-      // Allow reading cameras subcollection (public read)
-      match /cameras/{cameraId} {
-        // Allow reading camera documents (public read)
-        allow read: if true;
-        
-        // Allow reading windows subcollection (historical data) - public read
-        // CRITICAL: Windows collection contains immutable historical data - never delete
-        match /windows/{windowId} {
-          allow read: if true;
-          allow write: if false; // Prevent any writes/deletes from client (Cloud Functions use admin SDK)
-        }
-        
-        // Allow reading daily subcollection (aggregated data) - public read
-        match /daily/{dateId} {
-          allow read: if true;
-          allow write: if false; // Prevent any writes/deletes from client
-        }
-        
-        // Allow reading monthly subcollection (monthly aggregated data) - public read
-        match /monthly/{monthId} {
-          allow read: if true;
-          allow write: if false; // Prevent any writes/deletes from client
-        }
-        
-        // Allow reading monthlyArchive subcollection (historical monthly data) - public read
-        match /monthlyArchive/{monthId} {
-          allow read: if true;
-          allow write: if false; // Prevent any writes/deletes from client
-        }
-        
-        // Allow reading hourly subcollection (pre-aggregated hourly data) - public read
-        // CRITICAL: Hourly aggregates are historical data - preserve all
-        match /hourly/{hourId} {
-          allow read: if true;
-          allow write: if false; // Prevent any writes/deletes from client (Cloud Functions use admin SDK)
-        }
-      }
+    function isSignedIn() {
+      return request.auth != null;
     }
     
-    // Deny all other access by default
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.role == 'superadmin';
+    }
+
+    match /users/{userId} {
+      allow read, get: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
+      allow list: if isSuperAdmin();
+      allow create: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
+      allow update, delete: if isSuperAdmin();
+    }
+
+    match /organizations/{orgId} {
+      allow read, get, list: if isSignedIn() && (isSuperAdmin() || request.auth.token.org_id == orgId);
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    match /sites/{siteId} {
+      allow read, get, list: if isSignedIn() && (isSuperAdmin() || (resource != null && request.auth.token.org_id == resource.data.org_id));
+      allow write: if isSuperAdmin();
+    }
+
+    match /cameras/{cameraId} {
+      allow read, get, list: if isSignedIn() && (isSuperAdmin() || (resource != null && request.auth.token.org_id == resource.data.org_id));
+      allow write: if isSuperAdmin();
+    }
+
+    match /counts/{countId} {
+      allow read, get: if isSignedIn() && (isSuperAdmin() || (resource != null && request.auth.token.org_id == resource.data.org_id));
+      allow list: if isSignedIn() && (
+        isSuperAdmin() || 
+        (request.auth.token.org_id != null && 
+         request.query.limit <= 100)
+      );
+      allow write: if isSuperAdmin(); 
+    }
+
+    match /commands/{commandId} {
+      allow create: if isSuperAdmin(); // Only superadmins can create commands
+      allow read, list: if isSignedIn();
+      allow update: if true; // Allow devices to update command status
+      allow delete: if isSuperAdmin();
+    }
+
+    match /snapshots/{snapshotId} {
+      allow read, get: if isSignedIn() && (isSuperAdmin() || (resource != null && request.auth.token.org_id == resource.data.org_id));
+      allow list: if isSignedIn() && (isSuperAdmin() || request.auth.token.org_id != null);
+      allow create: if true; // Allow devices to create snapshot metadata
+      allow update, delete: if isSuperAdmin();
+    }
+
+    match /handshakes/{handshakeId} {
+      allow read, list: if isSuperAdmin();
+      allow create: if true; // Publicly initiatable by the installer app
+      allow update, delete: if isSuperAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
-
-
-
-
-

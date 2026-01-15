@@ -1,0 +1,6 @@
+{
+    "backend_url": "https://us-central1-aiodcounter06.cloudfunctions.net/api",
+    "token": "c7979e050518223bedea817d510ac48819b98a9b90efc633ed586da956534ea1",
+    "site_id": "global-innovation-anaheim-001",
+    "org_id": "global-innovation"
+}

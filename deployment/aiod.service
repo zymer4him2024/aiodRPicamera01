@@ -1,0 +1,17 @@
+[Unit]
+Description=AIOD Camera System
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/digioptics_od/camera-system
+ExecStart=/usr/bin/python3 /home/digioptics_od/camera-system/startup.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

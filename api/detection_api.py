@@ -84,6 +84,38 @@ def stop_detection():
         logger.error(f"Error stopping detection: {e}")
         return jsonify({"status": "failure", "error": str(e)}), 500
 
+@app.route('/snapshot', methods=['POST'])
+def capture_snapshot():
+    """Capture and return the latest annotated frame as JPEG"""
+    orch = get_orchestrator()
+    if not orch:
+        return jsonify({"error": "Orchestrator not initialized"}), 500
+    
+    try:
+        import cv2
+        
+        # Get the latest annotated frame
+        frame = orch.last_annotated_frame
+        if frame is None:
+            return jsonify({"error": "No frame available"}), 404
+        
+        # Encode as JPEG with 85% quality
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 85]
+        success, buffer = cv2.imencode('.jpg', frame, encode_param)
+        
+        if not success:
+            return jsonify({"error": "Failed to encode frame"}), 500
+        
+        # Return as binary image
+        response = make_response(buffer.tobytes())
+        response.headers['Content-Type'] = 'image/jpeg'
+        response.headers['Content-Disposition'] = 'inline; filename=snapshot.jpg'
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error capturing snapshot: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/detection/status', methods=['GET'])
 def get_status():
     orch = get_orchestrator()

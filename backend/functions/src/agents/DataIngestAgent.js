@@ -40,6 +40,8 @@ class DataIngestAgent extends Agent {
             // 3. Normalize Payload
             const counts = body.data?.counts || body.counts;
             const timestamp = body.environment?.timestamp || body.timestamp || new Date().toISOString();
+            const hardware = counts.hardware || {};
+            const fps = counts.fps || null;
 
             // 4. Store in Firestore (Isolated by Org)
             const countRef = this.db
@@ -53,7 +55,13 @@ class DataIngestAgent extends Agent {
                 site_id,
                 timestamp: admin.firestore.Timestamp.fromDate(new Date(timestamp)),
                 counts,
-                total: Object.values(counts).reduce((a, b) => a + b, 0),
+                total: Object.values(counts).reduce((a, b) => (typeof b === 'number' ? a + b : a), 0),
+                hardware: {
+                    cpu_temp: hardware.cpu_temp || null,
+                    hailo_temp: hardware.hailo_temp || null,
+                    hailo_load: hardware.hailo_load || null,
+                    fps: fps
+                },
                 created_at: admin.firestore.FieldValue.serverTimestamp()
             });
 
