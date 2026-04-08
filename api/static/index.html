@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI OD Counter | RPi Monitoring</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #38bdf8;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 2rem;
+            text-align: center;
+            background: linear-gradient(to right, #1e293b, #0f172a);
+            border-bottom: 1px solid #334155;
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 90%;
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            border: 1px solid #334155;
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background-color: var(--success);
+            color: white;
+            box-shadow: 0 0 15px var(--success);
+        }
+
+        .status-inactive {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .count-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .count-card {
+            background: #0f172a;
+            padding: 2rem 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .count-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .count-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .count-value {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: center;
+        }
+
+        button {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn-start {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-stop {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .system-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            border-top: 1px solid #334155;
+            padding-top: 1rem;
+        }
+
+        .info-item b {
+            color: var(--text-primary);
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .scanning {
+            animation: pulse 2s infinite;
+            color: var(--warning) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>AI Traffic Monitor</h1>
+        <p class="subtitle">High-Efficiency Object Detection on RPi 5</p>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <div class="status-header">
+                <h3 style="margin:0">Real-time Statistics</h3>
+                <span id="status-text" class="status-badge status-inactive">Inactive</span>
+            </div>
+
+            <div id="count-display" class="count-grid">
+                <!-- Count cards dynamically inserted here -->
+                <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-secondary);">
+                    Press 'Start Monitor' to begin monitoring
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="start-btn" class="btn-start" onclick="toggleDetection('start')">Start Monitor</button>
+                <button id="stop-btn" class="btn-stop" onclick="toggleDetection('stop')">Stop Monitor</button>
+            </div>
+
+            <div class="system-info">
+                <div class="info-item">Camera: <b id="camera-id">---</b></div>
+                <div class="info-item">Performance: <b id="fps-value" class="scanning">0.00 FPS</b></div>
+                <div class="info-item">Uptime: <b id="uptime">0.00s</b></div>
+                <div class="info-item">Backend Stream: <b id="last-report">N/A</b></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusText = document.getElementById('status-text');
+        const countDisplay = document.getElementById('count-display');
+
+        const REQUIRED_CLASSES = ["Pedestrians", "Cars", "Buses", "Trucks", "Motorcycles"];
+        const CLASS_LABELS = {
+            'Pedestrians': 'Pedestrians',
+            'Cars': 'Cars',
+            'Buses': 'Buses',
+            'Trucks': 'Trucks',
+            'Motorcycles': 'Motorcycles'
+        };
+
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/detection/status');
+                const data = await response.json();
+
+                const isActive = !!data.active;
+                statusText.textContent = isActive ? 'Active' : 'Inactive';
+                statusText.className = `status-badge ${isActive ? 'status-active' : 'status-inactive'}`;
+
+                document.getElementById('camera-id').innerText = data.camera_id || '---';
+                document.getElementById('uptime').innerText = data.uptime || '0.00s';
+
+                const latestCounts = data.latest_counts || {};
+                const syncTime = latestCounts.last_update || 'N/A';
+                document.getElementById('last-report').innerText = `Sync: ${syncTime}`;
+
+                const fps = latestCounts.fps || 0.0;
+                const fpsElement = document.getElementById('fps-value');
+                fpsElement.innerText = `${fps.toFixed(2)} FPS`;
+                fpsElement.className = isActive ? (fps > 0 ? '' : 'scanning') : 'scanning';
+
+                startBtn.disabled = isActive;
+                stopBtn.disabled = !isActive;
+
+                // Update counts UI
+                if (isActive) {
+                    renderCounts(latestCounts);
+                } else if (countDisplay.innerHTML.trim() === '') {
+                    countDisplay.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-secondary);">Monitoring is paused</div>`;
+                }
+            } catch (e) {
+                console.error("Status update failed", e);
+            }
+        }
+
+        function renderCounts(counts) {
+            countDisplay.innerHTML = '';
+
+            REQUIRED_CLASSES.forEach(cls => {
+                const val = counts[cls] || 0;
+                const card = document.createElement('div');
+                card.className = 'count-card';
+                card.innerHTML = `
+                    <div class="count-label">${CLASS_LABELS[cls]}</div>
+                    <div class="count-value ${val > 0 ? '' : 'scanning'}">${val}</div>
+                `;
+                countDisplay.appendChild(card);
+            });
+        }
+
+        async function toggleDetection(action) {
+            try {
+                const response = await fetch(`/api/detection/${action}`, { method: 'POST' });
+                if (response.ok) {
+                    setTimeout(updateStatus, 500);
+                }
+            } catch (e) {
+                alert(`Failed to ${action} detection`);
+            }
+        }
+
+        setInterval(updateStatus, 1500);
+        updateStatus();
+    </script>
+</body>
+
+</html>

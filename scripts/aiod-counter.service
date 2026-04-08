@@ -1,0 +1,15 @@
+[Unit]
+Description=AI Object Detection Counter API
+After=network.target
+
+[Service]
+# Replace 'shawnshlee' with your RPi username if different
+User=digioptics_od
+WorkingDirectory=/home/digioptics_od/camera-system
+Environment="PYTHONPATH=/home/digioptics_od/camera-system"
+ExecStart=/home/digioptics_od/camera-system/venv/bin/python3 main.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

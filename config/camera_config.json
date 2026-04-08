@@ -1,0 +1,8 @@
+{
+  "device_id": 0,
+  "resolution": [1920, 1080],
+  "fps": 30,
+  "format": "MJPEG",
+  "flip_horizontal": false,
+  "flip_vertical": false
+}

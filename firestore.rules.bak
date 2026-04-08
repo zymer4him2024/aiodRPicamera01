@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow public read access to sites collection for dashboard (no login required)
+    match /sites/{siteId} {
+      // Allow reading the site document (public read)
+      allow read: if true;
+      
+      // Allow reading cameras subcollection (public read)
+      match /cameras/{cameraId} {
+        // Allow reading camera documents (public read)
+        allow read: if true;
+        
+        // Allow reading windows subcollection (historical data) - public read
+        // CRITICAL: Windows collection contains immutable historical data - never delete
+        match /windows/{windowId} {
+          allow read: if true;
+          allow write: if false; // Prevent any writes/deletes from client (Cloud Functions use admin SDK)
+        }
+        
+        // Allow reading daily subcollection (aggregated data) - public read
+        match /daily/{dateId} {
+          allow read: if true;
+          allow write: if false; // Prevent any writes/deletes from client
+        }
+        
+        // Allow reading monthly subcollection (monthly aggregated data) - public read
+        match /monthly/{monthId} {
+          allow read: if true;
+          allow write: if false; // Prevent any writes/deletes from client
+        }
+        
+        // Allow reading monthlyArchive subcollection (historical monthly data) - public read
+        match /monthlyArchive/{monthId} {
+          allow read: if true;
+          allow write: if false; // Prevent any writes/deletes from client
+        }
+        
+        // Allow reading hourly subcollection (pre-aggregated hourly data) - public read
+        // CRITICAL: Hourly aggregates are historical data - preserve all
+        match /hourly/{hourId} {
+          allow read: if true;
+          allow write: if false; // Prevent any writes/deletes from client (Cloud Functions use admin SDK)
+        }
+      }
+    }
+    
+    // Deny all other access by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+
+
+
+

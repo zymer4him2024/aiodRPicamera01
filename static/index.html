@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Camera | Local Management</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --dim: #94a3b8;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 90%;
+            margin: 2rem 0;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feed-container {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-box {
+            background: #33415566;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--dim);
+            text-transform: uppercase;
+        }
+
+        .qr-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        #qrcode {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .badge {
+            background: #38bdf822;
+            color: var(--accent);
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .status-active .status-dot {
+            background: #22c55e;
+            box-shadow: 0 0 10px #22c55e;
+        }
+
+        .serial-num {
+            font-family: monospace;
+            background: #00000044;
+            padding: 0.5rem;
+            border-radius: 0.4rem;
+            font-size: 0.9rem;
+            color: var(--accent);
+            margin: 1rem 0;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1 style="margin: 0; font-size: 1.5rem;">AI Camera 5.0</h1>
+                <div id="status-indicator" class="status-active">
+                    <span class="status-dot"></span> <span id="status-text"
+                        style="font-size: 0.8rem; color: var(--dim);">ACTIVE</span>
+                </div>
+            </div>
+            <div class="badge">PRO EDITION</div>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                <h3 style="margin-top: 0;">Live Stream</h3>
+                <div class="feed-container">
+                    <img id="video-feed" src="/video_feed" alt="Camera Feed">
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-val" id="count-total">0</div>
+                        <div class="stat-label">Total Detections</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-val" id="fps">0.0</div>
+                        <div class="stat-label">Inference FPS</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card qr-section">
+                <h3 style="margin-top: 0;">Installation Bind</h3>
+                <p style="font-size: 0.9rem; color: var(--dim);">Installer: Scan this QR code using the aiodcounter05
+                    Dashboard to claim this unit.</p>
+                <div id="qrcode"></div>
+                <span class="serial-num" id="serial-num">Loading...</span>
+                <div style="text-align: left; width: 100%; border-top: 1px solid #334155; padding-top: 1rem;">
+                    <div style="font-size: 0.8rem; margin-bottom: 0.5rem;">
+                        <span style="color: var(--dim);">Binding Status:</span>
+                        <span id="bind-status" style="font-weight: 600;">UNBOUND</span>
+                    </div>
+                    <div style="font-size: 0.8rem;">
+                        <span style="color: var(--dim);">Local IP:</span>
+                        <span id="local-ip" style="font-weight: 600;">Detecting...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/detection/status');
+                const data = await response.json();
+
+                document.getElementById('count-total').innerText = data.latest_counts.total || 0;
+                document.getElementById('fps').innerText = data.latest_counts.fps || '0.0';
+
+                const statusIndicator = document.getElementById('status-indicator');
+                const statusText = document.getElementById('status-text');
+
+                if (data.active) {
+                    statusIndicator.className = 'status-active';
+                    statusText.innerText = 'ACTIVE';
+                } else {
+                    statusIndicator.className = '';
+                    statusText.innerText = 'STOPPED';
+                }
+            } catch (e) { console.error('Stats Update Failed', e); }
+        }
+
+        async function initIdentity() {
+            try {
+                const response = await fetch('/api/info');
+                const data = await response.json();
+
+                const serial = data.serial;
+                const ip = window.location.hostname;
+                const port = window.location.port || 80;
+
+                document.getElementById('serial-num').innerText = serial;
+                document.getElementById('local-ip').innerText = `${ip}:${port}`;
+                document.getElementById('bind-status').innerText = data.bound ? 'BOUND' : 'UNBOUND';
+                document.getElementById('bind-status').style.color = data.bound ? '#22c55e' : '#ef4444';
+
+                // QR Data for aiodcounter05 scheme
+                // Format optimized for installer app
+                const qrData = JSON.stringify({
+                    s: serial,
+                    ip: ip,
+                    p: port,
+                    m: 'RPi5-Hailo8'
+                });
+
+                QRCode.toCanvas(document.getElementById('qrcode'), qrData, {
+                    width: 200,
+                    margin: 2
+                });
+
+            } catch (e) { console.error('Identity Init Failed', e); }
+        }
+
+        setInterval(updateStats, 2000);
+        initIdentity();
+    </script>
+</body>
+
+</html>

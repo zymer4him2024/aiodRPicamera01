@@ -1,0 +1,15 @@
+{
+    "api_base_url": "https://us-central1-aiodcounterdemo.cloudfunctions.net",
+    "endpoints": {
+        "counts": "/ingestCounts",
+        "activate": "/activate",
+        "status": "/status"
+    },
+    "auth_token": "YOUR_X_API_KEY",
+    "auth_type": "X-API-Key",
+    "report_interval": 15,
+    "camera_id": "cam_01",
+    "site_id": "site_01",
+    "timeout": 10,
+    "max_retries": 10
+}
