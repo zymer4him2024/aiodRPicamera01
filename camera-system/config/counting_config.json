@@ -1,0 +1,6 @@
+{
+  "method": "simple_count",
+  "classes_to_count": ["person", "car", "truck", "bus", "motorcycle"],
+  "min_confidence": 0.6,
+  "zones": []
+}

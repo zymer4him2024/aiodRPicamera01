@@ -1,0 +1,13 @@
+{
+  "camera_id": "",
+  "site_id": "",
+  "endpoints": {
+    "activate": "",
+    "counts": "",
+    "status": ""
+  },
+  "auth_token": "",
+  "report_interval": 15,
+  "retry_attempts": 3,
+  "timeout": 10
+}

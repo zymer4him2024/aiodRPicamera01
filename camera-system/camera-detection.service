@@ -1,0 +1,29 @@
+[Unit]
+Description=Camera Detection System with Hailo-8
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=digioptics_od
+Group=digioptics_od
+WorkingDirectory=/home/digioptics_od/camera-system
+Environment="PATH=/home/digioptics_od/camera-system/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/digioptics_od/camera-system/venv/bin/python3 /home/digioptics_od/camera-system/main.py --daemon
+ExecStop=/bin/kill -TERM $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=camera-detection
+
+# Resource limits
+MemoryLimit=1G
+CPUQuota=200%
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

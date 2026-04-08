@@ -1,0 +1,25 @@
+node_modules
+dist
+.next
+out
+build
+*.zip
+*.tar.gz
+
+# Environment and secrets
+.env
+.env.*
+*.local
+*credentials*
+*.pem
+*.key
+serviceAccount*
+firebase-credentials*
+
+# OS
+.DS_Store
+
+# Editor
+.vscode
+.idea
+*.sw?
