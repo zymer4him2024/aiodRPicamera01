@@ -1,5 +1,30 @@
 # aiodRPicamera01 — Claude Code Harness
 
+## Harness Engineering Context
+
+This file is the **Claude Code harness** for aiodRPicamera01. Read as system configuration before every development session.
+
+**Critical invariants:**
+- The Orchestrator is the ONLY agent with lifecycle authority — no agent may start/stop another agent directly
+- All Firestore writes must include `tenantId` — no exceptions
+- Firebase credentials from environment variables only — never hardcoded
+- New agents MUST be registered with the Orchestrator for health monitoring
+- Agent failures must be handled gracefully — no bare `except` clauses that swallow errors silently
+
+**Orchestrator Pattern (do not break this contract):**
+```
+Orchestrator
+  ├── starts all agents on startup
+  ├── polls health every 30s
+  ├── restarts failed agents with exponential backoff
+  └── exposes REST API for external control (start/stop/status/config)
+```
+Any change to agent startup, lifecycle, or communication must go through the Orchestrator API — never bypass it.
+
+**If a constraint seems wrong, update this file explicitly. Do not work around it.**
+
+---
+
 ## Overview
 
 AI Object Detection pipeline for Raspberry Pi with Hailo-8. A self-healing multi-agent system: Orchestrator manages Camera, Inference, Counting, and Transport agents with automatic health monitoring and restart. Count events are synced to Firebase Firestore and displayed on a hosted dashboard.
@@ -142,3 +167,30 @@ Before completing any task:
 - [ ] Firebase credentials from environment — never hardcoded
 - [ ] New agents registered with Orchestrator for health monitoring
 - [ ] Tests cover agent start/stop and main detection path
+
+---
+
+## Ecosystem Position
+
+aiodRPicamera01 is the **reference edge inference implementation** for the Antigravity platform.
+
+```
+TeleiosAI01 (Studio)  →  model.hef
+                               ↓
+                     aiodRPicamera01 (loads HEF)
+                     Orchestrator → Camera → Inference → Counting → Transport
+                               ↓
+                     Firebase Firestore (count events)
+                               ↓
+                     AI OD Counter Multitenant (dashboard)
+```
+
+The architecture here (Orchestrator + named agents + Firestore transport) is the template for SurgicalAI01 and Detection2Robotics01.
+
+## ui-platform Alignment
+
+The hosted dashboard (in `hosting/`) should follow the Antigravity shared design system:
+- Import components from `@repo/ui` when migrating to a framework
+- Use `MonitoringView` template for count dashboard
+- Design tokens: brand blue #3b82f6, Inter font, Zinc neutrals, 4px spacing grid
+- Reference [ui-platform CLAUDE.md](https://github.com/zymer4him2024/ui-platform/blob/main/CLAUDE.md)

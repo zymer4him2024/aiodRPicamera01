@@ -6,6 +6,7 @@
 ![Firebase](https://img.shields.io/badge/Backend-Firebase-FFCA28)
 ![Status](https://img.shields.io/badge/Status-Deployment%20Ready-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-green)
+![Claude Code](https://img.shields.io/badge/Dev%20OS-Claude%20Code-blueviolet)
 
 AI Object Detection pipeline for Raspberry Pi with Hailo-8 camera system. A self-healing multi-agent architecture: an Orchestrator manages the lifecycle of Camera, Inference, Counting, and Transport agents, with automatic restart on failure and one-command deployment to any RPi target.
 
@@ -144,6 +145,14 @@ aiodRPicamera01/
 ├── deploy_to_rpi.sh           — One-command RPi deployment
 └── requirements.txt
 ```
+
+---
+
+## Harness Engineering
+
+Claude Code drives development with `CLAUDE.md` as the system configuration contract. The harness encodes the Orchestrator authority model (only the Orchestrator manages agent lifecycles), Firestore tenant isolation requirements, and deployment pipeline contracts.
+
+This repo is the **reference implementation** for Hailo-8 edge inference on Raspberry Pi. The agent architecture pattern here is the template consumed by SurgicalAI01 and Detection2Robotics01.
 
 ---
 
