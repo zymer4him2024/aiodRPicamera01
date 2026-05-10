@@ -19,16 +19,16 @@ AI Object Detection pipeline for Raspberry Pi with Hailo-8 camera system. A self
 │                    ORCHESTRATOR AGENT                       │
 │  Lifecycle management, health monitoring, auto-restart,     │
 │  metrics collection, REST API for remote control            │
-└────────────┬──────────────┬──────────────┬─────────────────┘
+└────────────┼─────────────┼────────────┼─────────────────┘
              │              │              │
-    ┌────────▼───┐  ┌───────▼──────┐  ┌───▼────┐  ┌─────────▼──────┐
+    ┌─────────┼──┐  ┌──────┼──────┐  ┌───┼────┐  ┌─────────┼─────┐
     │   CAMERA   │  │  INFERENCE   │  │COUNTING│  │   TRANSPORT    │
     │   AGENT    │─▶│    AGENT     │─▶│ AGENT  │─▶│     AGENT      │
     │ USB/CSI    │  │  Hailo-8     │  │ Object │  │ Firebase Cloud │
     │ capture    │  │  YOLOv8      │  │ aggr.  │  │ Functions sync │
     └────────────┘  └─────────────┘  └────────┘  └────────────────┘
                                                          │
-                                              ┌──────────▼──────────┐
+                                              ┌─────────┼──────────┐
                                               │  Firebase Firestore  │
                                               │  + Hosting Dashboard │
                                               └─────────────────────┘
@@ -145,6 +145,38 @@ aiodRPicamera01/
 ├── deploy_to_rpi.sh           — One-command RPi deployment
 └── requirements.txt
 ```
+
+---
+
+## Ecosystem Position
+
+aiodRPicamera01 is the **reference edge inference implementation** for the Antigravity platform — the canonical multi-agent pattern that SurgicalAI01 and Detection2Robotics01 extend for their specific domains.
+
+```
+TeleiosAI01 (Studio)  →  model.hef + labels.json
+                                   ↓
+             aiodRPicamera01 (RPi5 + Hailo-8)
+             ┌────────────────────────────────────────┐
+             │ Orchestrator                              │
+             │   ├── Camera Agent                       │
+             │   ├── Inference Agent (Hailo-8)          │
+             │   ├── Counting Agent                     │
+             │   ├── Transport Agent ────────────────┬│
+             │   └── Handshake Agent                    ││
+             └───────────────────────────────────────┘│
+                                                        ↓
+                                    Firebase Firestore (count events)
+                                                        ↓
+                                AI OD Counter Multitenant (dashboard)
+```
+
+| Role | Project | Connection |
+|---|---|---|
+| Model factory | [TeleiosAI01](https://github.com/zymer4him2024/teleiosai01) | Produces `model.hef` + `labels.json` loaded by the Inference Agent |
+| Count visualization | [AI OD Counter Multitenant](https://github.com/zymer4him2024/ai-od-counter-multitenant) | Consumes Firestore count events written by Transport Agent |
+| Surgical extension | [SurgicalAI01](https://github.com/zymer4him2024/surgicalai01) | Extends this architecture with a Gateway state machine, HDMI HUD, and Device Master |
+| Robotics extension | [Detection2Robotics01](https://github.com/zymer4him2024/detection2robotics01) | Extends this architecture with Coordinator + RTDE robot actuation |
+| UI design system | [ui-platform](https://github.com/zymer4him2024/ui-platform) | Design tokens for the hosted Vite dashboard |
 
 ---
 
