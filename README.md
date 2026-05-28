@@ -161,9 +161,9 @@ TeleiosAI01 (Studio)  →  model.hef + labels.json
              │   ├── Camera Agent                       │
              │   ├── Inference Agent (Hailo-8)          │
              │   ├── Counting Agent                     │
-             │   ├── Transport Agent ────────────────┬│
-             │   └── Handshake Agent                    ││
-             └───────────────────────────────────────┘│
+             │   ├── Transport Agent ────────────────┬  │
+             │   └── Handshake Agent                 │  │
+             └───────────────────────────────────────┘  │
                                                         ↓
                                     Firebase Firestore (count events)
                                                         ↓
@@ -207,3 +207,12 @@ This repo is the **reference implementation** for Hailo-8 edge inference on Rasp
 - Firebase credentials via environment variables only — never committed
 - Systemd service ensures system-level reliability on RPi hardware
 - Firestore security rules enforce per-tenant data isolation
+
+---
+
+## Platform Resources
+
+| Resource | Description |
+|---|---|
+| [Platform Overview (TECHNOLOGY.md)](https://github.com/zymer4him2024/ui-platform/blob/main/docs/TECHNOLOGY.md) | Full Antigravity platform narrative — all 8 projects, agentic OS philosophy, harness engineering methodology |
+| [Marketing Assets (MARKETING.md)](https://github.com/zymer4him2024/ui-platform/blob/main/docs/MARKETING.md) | Platform positioning, value propositions, competitive analysis, key metrics |
