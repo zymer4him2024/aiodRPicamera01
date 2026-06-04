@@ -105,11 +105,13 @@ python -m pytest tests/ -v
 
 ### API Control
 
+The Orchestrator exposes a REST API on `localhost:8080` for remote control and monitoring.
+
 ```bash
 # Health check
 curl http://localhost:8080/health
 
-# Agent status
+# Agent status (shows each agent's state + restart count)
 curl http://localhost:8080/status
 
 # Stop all agents
@@ -117,7 +119,24 @@ curl -X POST http://localhost:8080/stop
 
 # Start all agents
 curl -X POST http://localhost:8080/start
+
+# Update runtime config (e.g., change inference FPS)
+curl -X POST http://localhost:8080/config \
+  -H "Content-Type: application/json" \
+  -d '{"inference_fps": 10}'
+
+# Get metrics (inference latency, frame counts, agent uptime)
+curl http://localhost:8080/metrics
 ```
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/health` | GET | Overall system health (healthy/degraded/down) |
+| `/status` | GET | Per-agent state, restart count, last heartbeat |
+| `/start` | POST | Start all agents via Orchestrator |
+| `/stop` | POST | Graceful shutdown of all agents |
+| `/config` | POST | Live config update (FPS, thresholds) |
+| `/metrics` | GET | Inference latency, agent uptime, count totals |
 
 ---
 
